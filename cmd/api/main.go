@@ -12,7 +12,7 @@ import (
 	"github.com/PhantomXD-nepal/goauthtemplate/db/generated/sqlc"
 	"github.com/PhantomXD-nepal/goauthtemplate/internal/config"
 	"github.com/PhantomXD-nepal/goauthtemplate/internal/server"
-	logger "github.com/PhantomXD-nepal/goauthtemplate/package"
+	"github.com/PhantomXD-nepal/goauthtemplate/utils"
 )
 
 func main() {
@@ -27,26 +27,26 @@ func main() {
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logger.Error("Failed to connect to db with err: " + err.Error())
+		utils.Error("Failed to connect to db with err: " + err.Error())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
-		logger.Error("Failed to ping db with err: " + err.Error())
+		utils.Error("Failed to ping db with err: " + err.Error())
 	}
-	logger.Mascot()
-	logger.Info("Connected to database successfully")
+	utils.Mascot()
+	utils.Info("Connected to database successfully")
 
 	queries := sqlc.New(db)
 	_ = queries
 	apiServer := server.NewAPIServer(fmt.Sprintf(":%s", cfg.Port), db)
 
-	logger.Info("Starting API server on port " + cfg.Port)
+	utils.Info("Starting API server on port " + cfg.Port)
 
 	if err := apiServer.Start(); err != nil {
-		logger.Error("Failed to start server with err: " + err.Error())
+		utils.Error("Failed to start server with err: " + err.Error())
 	}
 
 }

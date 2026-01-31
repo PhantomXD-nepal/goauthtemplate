@@ -1,23 +1,14 @@
 -- name: CreateUser :exec
-INSERT INTO users (
-    id,
-    email,
-    password_hash
-) VALUES (?, ?, ?);
+INSERT INTO users (id, email, password)
+VALUES (UUID_TO_BIN(?), ?, ?);
 
 -- name: GetUserByEmail :one
-SELECT id, email, password_hash, is_active, created_at
+SELECT BIN_TO_UUID(id) as id, email, password, created_at
 FROM users
-WHERE email = ?
-LIMIT 1;
+WHERE email = ?;
 
 -- name: GetUserByID :one
-SELECT id, email, is_active, created_at
+SELECT BIN_TO_UUID(id) as id, email, created_at
 FROM users
-WHERE id = ?
+WHERE id = UUID_TO_BIN(?)
 LIMIT 1;
-
--- name: DisableUser :exec
-UPDATE users
-SET is_active = FALSE
-WHERE id = ?;

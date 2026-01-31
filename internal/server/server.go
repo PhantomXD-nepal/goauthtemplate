@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/PhantomXD-nepal/goauthtemplate/db/generated/sqlc"
+	"github.com/PhantomXD-nepal/goauthtemplate/internal/services/user"
 	"github.com/go-chi/chi/middleware"
 	"github.com/gorilla/mux"
 )
@@ -36,5 +37,13 @@ func (s *APIServer) Start() error {
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
 	router.Use(middleware.Timeout(60 * time.Second))
+
+	//Initialaize the routers
+	authRouter := router.PathPrefix("/auth").Subrouter()
+
+	userService := user.NewService(sqlc.New(s.db))
+	userHandler := user.NewHandler(userService)
+	userHandler.RegisterRoutes(authRouter)
+
 	return http.ListenAndServe(s.addr, router)
 }

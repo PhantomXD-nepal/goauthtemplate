@@ -8,6 +8,8 @@ package sqlc
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createRefreshToken = `-- name: CreateRefreshToken :exec
@@ -20,8 +22,8 @@ INSERT INTO refresh_tokens (
 `
 
 type CreateRefreshTokenParams struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
@@ -51,7 +53,7 @@ DELETE FROM refresh_tokens
 WHERE id = ?
 `
 
-func (q *Queries) DeleteRefreshToken(ctx context.Context, id string) error {
+func (q *Queries) DeleteRefreshToken(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteRefreshToken, id)
 	return err
 }
@@ -61,7 +63,7 @@ DELETE FROM refresh_tokens
 WHERE user_id = ?
 `
 
-func (q *Queries) DeleteUserRefreshTokens(ctx context.Context, userID string) error {
+func (q *Queries) DeleteUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteUserRefreshTokens, userID)
 	return err
 }
@@ -74,13 +76,13 @@ LIMIT 1
 `
 
 type GetRefreshTokenRow struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-func (q *Queries) GetRefreshToken(ctx context.Context, id string) (GetRefreshTokenRow, error) {
+func (q *Queries) GetRefreshToken(ctx context.Context, id uuid.UUID) (GetRefreshTokenRow, error) {
 	row := q.db.QueryRowContext(ctx, getRefreshToken, id)
 	var i GetRefreshTokenRow
 	err := row.Scan(

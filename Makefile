@@ -1,5 +1,5 @@
 APP_NAME := api
-DB_URL := "mysql://root:phantom0627@tcp(localhost:3306)/testdb"
+DB_URL := "mysql://root:phantom0627@tcp(localhost:3306)/authentication_service"
 
 .PHONY: build run test sqlc migrate-up migrate-down tidy
 

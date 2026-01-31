@@ -1,14 +1,16 @@
 CREATE TABLE users (
-    id            CHAR(36) PRIMARY KEY,
-    email         VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id BINARY(16) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id)
 );
 
+
 CREATE TABLE refresh_tokens (
-    id          CHAR(36) PRIMARY KEY,
-    user_id     CHAR(36) NOT NULL,
+    id          BINARY(16) PRIMARY KEY,
+    user_id     BINARY(16) NOT NULL,
     token_hash  VARCHAR(255) NOT NULL,
     expires_at  TIMESTAMP NOT NULL,
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

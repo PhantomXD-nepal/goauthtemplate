@@ -1,11 +1,17 @@
-package logger
+package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/PhantomXD-nepal/goauthtemplate/internal/config"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type Level string
@@ -78,4 +84,50 @@ func Mascot() {
   ╰──────────╯
 `
 	fmt.Fprintln(os.Stdout, pink+ascii+reset)
+}
+
+var Validate = validator.New()
+
+func ParseJSON(r *http.Request, payload any) error {
+	if r.Body == nil {
+		return fmt.Errorf("Missing request body")
+	}
+
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func WriteJSON(w http.ResponseWriter, status int, payload any) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(payload)
+}
+
+func WriteError(w http.ResponseWriter, status int, err error) {
+	WriteJSON(w, status, map[string]string{"error": err.Error()})
+}
+
+func UuidToBytes(id uuid.UUID) ([]byte, error) {
+	return id.MarshalBinary()
+}
+
+func BytesToUUID(b []byte) (uuid.UUID, error) {
+	return uuid.FromBytes(b)
+}
+func PrintRoutes(r *mux.Router) {
+	_ = r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, _ := route.GetPathTemplate()
+		methods, _ := route.GetMethods()
+
+		fmt.Printf("ROUTE %-30s METHODS %v\n", path, methods)
+		return nil
+	})
+}
+
+func GenerateRandomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

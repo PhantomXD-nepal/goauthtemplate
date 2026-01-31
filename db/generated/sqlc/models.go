@@ -5,21 +5,23 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RefreshToken struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"password_hash"`
-	IsActive     bool      `json:"is_active"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID        uuid.UUID    `json:"id"`
+	Email     string       `json:"email"`
+	Password  string       `json:"password"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }

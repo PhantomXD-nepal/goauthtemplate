@@ -7,81 +7,66 @@ package sqlc
 
 import (
 	"context"
-	"time"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO users (
-    id,
-    email,
-    password_hash
-) VALUES (?, ?, ?)
+INSERT INTO users (id, email, password)
+VALUES (UUID_TO_BIN(?), ?, ?)
 `
 
 type CreateUserParams struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
+	UUIDTOBIN string `json:"UUID_TO_BIN"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.db.ExecContext(ctx, createUser, arg.ID, arg.Email, arg.PasswordHash)
-	return err
-}
-
-const disableUser = `-- name: DisableUser :exec
-UPDATE users
-SET is_active = FALSE
-WHERE id = ?
-`
-
-func (q *Queries) DisableUser(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, disableUser, id)
+	_, err := q.db.ExecContext(ctx, createUser, arg.UUIDTOBIN, arg.Email, arg.Password)
 	return err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, is_active, created_at
+SELECT BIN_TO_UUID(id) as id, email, password, created_at
 FROM users
 WHERE email = ?
-LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID        string       `json:"id"`
+	Email     string       `json:"email"`
+	Password  string       `json:"password"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.PasswordHash,
-		&i.IsActive,
+		&i.Password,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, is_active, created_at
+SELECT BIN_TO_UUID(id) as id, email, created_at
 FROM users
-WHERE id = ?
+WHERE id = UUID_TO_BIN(?)
 LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string       `json:"id"`
+	Email     string       `json:"email"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
-func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, id)
+func (q *Queries) GetUserByID(ctx context.Context, uuidTOBIN string) (GetUserByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, uuidTOBIN)
 	var i GetUserByIDRow
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.IsActive,
-		&i.CreatedAt,
-	)
+	err := row.Scan(&i.ID, &i.Email, &i.CreatedAt)
 	return i, err
 }
