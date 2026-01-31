@@ -8,8 +8,6 @@ package sqlc
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const createRefreshToken = `-- name: CreateRefreshToken :exec
@@ -18,20 +16,25 @@ INSERT INTO refresh_tokens (
     user_id,
     token_hash,
     expires_at
-) VALUES (?, ?, ?, ?)
+) VALUES (
+    UUID_TO_BIN(?),
+    UUID_TO_BIN(?),
+    ?,
+    ?
+)
 `
 
 type CreateRefreshTokenParams struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
-	TokenHash string    `json:"token_hash"`
-	ExpiresAt time.Time `json:"expires_at"`
+	UUIDTOBIN   string    `json:"UUID_TO_BIN"`
+	UUIDTOBIN_2 string    `json:"UUID_TO_BIN_2"`
+	TokenHash   string    `json:"token_hash"`
+	ExpiresAt   time.Time `json:"expires_at"`
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) error {
 	_, err := q.db.ExecContext(ctx, createRefreshToken,
-		arg.ID,
-		arg.UserID,
+		arg.UUIDTOBIN,
+		arg.UUIDTOBIN_2,
 		arg.TokenHash,
 		arg.ExpiresAt,
 	)
@@ -50,40 +53,34 @@ func (q *Queries) DeleteExpiredRefreshTokens(ctx context.Context) error {
 
 const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
 DELETE FROM refresh_tokens
-WHERE id = ?
+WHERE user_id = UUID_TO_BIN(?)
 `
 
-func (q *Queries) DeleteRefreshToken(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteRefreshToken, id)
-	return err
-}
-
-const deleteUserRefreshTokens = `-- name: DeleteUserRefreshTokens :exec
-DELETE FROM refresh_tokens
-WHERE user_id = ?
-`
-
-func (q *Queries) DeleteUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteUserRefreshTokens, userID)
+func (q *Queries) DeleteRefreshToken(ctx context.Context, uuidTOBIN string) error {
+	_, err := q.db.ExecContext(ctx, deleteRefreshToken, uuidTOBIN)
 	return err
 }
 
 const getRefreshToken = `-- name: GetRefreshToken :one
-SELECT id, user_id, token_hash, expires_at
+SELECT
+    BIN_TO_UUID(id)      AS id,
+    BIN_TO_UUID(user_id) AS user_id,
+    token_hash,
+    expires_at
 FROM refresh_tokens
-WHERE id = ?
+WHERE id = UUID_TO_BIN(?)
 LIMIT 1
 `
 
 type GetRefreshTokenRow struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-func (q *Queries) GetRefreshToken(ctx context.Context, id uuid.UUID) (GetRefreshTokenRow, error) {
-	row := q.db.QueryRowContext(ctx, getRefreshToken, id)
+func (q *Queries) GetRefreshToken(ctx context.Context, uuidTOBIN string) (GetRefreshTokenRow, error) {
+	row := q.db.QueryRowContext(ctx, getRefreshToken, uuidTOBIN)
 	var i GetRefreshTokenRow
 	err := row.Scan(
 		&i.ID,

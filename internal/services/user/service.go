@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/PhantomXD-nepal/goauthtemplate/db/generated/sqlc"
 	"github.com/PhantomXD-nepal/goauthtemplate/internal/services/auth"
@@ -55,7 +56,7 @@ func (s *Service) Register(ctx context.Context, email, password string) error {
 	return nil
 }
 
-func (s *Service) Login(ctx context.Context, email, password string) (string, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (string, string, error) {
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		bcrypt.CompareHashAndPassword(
@@ -63,28 +64,50 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, er
 			[]byte(password),
 		)
 		if err == sql.ErrNoRows {
-			return "", types.ErrInvalidCredentials
+			return "", "", types.ErrInvalidCredentials
 		}
 		utils.Error("Failed to fetch user: " + err.Error())
-		return "", types.ErrInternalServer
+		return "", "", types.ErrInternalServer
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", types.ErrInvalidCredentials
+		return "", "", types.ErrInvalidCredentials
 	}
 
 	userID, err := uuid.Parse(user.ID)
 	if err != nil {
 		utils.Error("Failed to parse user ID: " + err.Error())
-		return "", types.ErrInternalServer
+		return "", "", types.ErrInternalServer
 	}
-
+	//Generate access token
 	token, err := auth.GenerateJWT(userID, user.Email)
+
+	//Generate refresh token
+	refreshTokenValue := utils.GenerateRandomString(32)
+	hashedRefreshToken := utils.HashString(refreshTokenValue)
+	refreshTokenID := uuid.New()
+
+	//Delete previous refresh tokens
+	err = s.queries.DeleteRefreshToken(ctx, userID.String())
 	if err != nil {
-		utils.Error("Failed to generate JWT: " + err.Error())
-		return "", types.ErrInternalServer
+		utils.Error("Failed to delete: " + err.Error())
+		return "", "", types.ErrInternalServer
 	}
 
-	return token, nil
+	//Create new refresh token
+
+	err = s.queries.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
+		UUIDTOBIN:   refreshTokenID.String(),
+		UUIDTOBIN_2: userID.String(),
+		TokenHash:   hashedRefreshToken,
+		ExpiresAt:   time.Now().Add(24 * time.Hour),
+	})
+
+	if err != nil {
+		utils.Error("Failed to create refresh token: " + err.Error())
+		return "", "", types.ErrInternalServer
+	}
+
+	return token, refreshTokenValue, nil
 }

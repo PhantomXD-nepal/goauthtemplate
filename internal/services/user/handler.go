@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/PhantomXD-nepal/goauthtemplate/internal/types"
@@ -20,6 +21,7 @@ func NewHandler(service types.UserService) *Handler {
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/register", h.HandleRegister).Methods("POST")
+	router.HandleFunc("/login", h.HandleLogin).Methods("POST")
 
 }
 
@@ -45,5 +47,34 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
+
+}
+
+func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	var payload types.LoginUserPayload
+
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+	if err := utils.Validate.Struct(payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	token, refreshToken, err := h.service.Login(r.Context(), payload.Email, payload.Password)
+	if err == types.ErrInvalidCredentials {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err == types.ErrInternalServer {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("Internal Server error"))
+		utils.Error("An error occured during login process" + err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusAccepted, map[string]string{
+		"token":         token,
+		"refresh_token": refreshToken,
+	})
 
 }

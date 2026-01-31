@@ -4,21 +4,27 @@ INSERT INTO refresh_tokens (
     user_id,
     token_hash,
     expires_at
-) VALUES (?, ?, ?, ?);
+) VALUES (
+    UUID_TO_BIN(?),
+    UUID_TO_BIN(?),
+    ?,
+    ?
+);
 
 -- name: GetRefreshToken :one
-SELECT id, user_id, token_hash, expires_at
+SELECT
+    BIN_TO_UUID(id)      AS id,
+    BIN_TO_UUID(user_id) AS user_id,
+    token_hash,
+    expires_at
 FROM refresh_tokens
-WHERE id = ?
+WHERE id = UUID_TO_BIN(?)
 LIMIT 1;
+
 
 -- name: DeleteRefreshToken :exec
 DELETE FROM refresh_tokens
-WHERE id = ?;
-
--- name: DeleteUserRefreshTokens :exec
-DELETE FROM refresh_tokens
-WHERE user_id = ?;
+WHERE user_id = UUID_TO_BIN(?);
 
 -- name: DeleteExpiredRefreshTokens :exec
 DELETE FROM refresh_tokens
