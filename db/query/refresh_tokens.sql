@@ -11,14 +11,15 @@ INSERT INTO refresh_tokens (
     ?
 );
 
--- name: GetRefreshToken :one
+
+-- name: GetRefreshTokenFromTokenHash :one
 SELECT
     BIN_TO_UUID(id)      AS id,
     BIN_TO_UUID(user_id) AS user_id,
     token_hash,
     expires_at
 FROM refresh_tokens
-WHERE id = UUID_TO_BIN(?)
+WHERE token_hash = ?
 LIMIT 1;
 
 

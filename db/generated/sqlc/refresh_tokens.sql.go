@@ -61,27 +61,27 @@ func (q *Queries) DeleteRefreshToken(ctx context.Context, uuidTOBIN string) erro
 	return err
 }
 
-const getRefreshToken = `-- name: GetRefreshToken :one
+const getRefreshTokenFromTokenHash = `-- name: GetRefreshTokenFromTokenHash :one
 SELECT
     BIN_TO_UUID(id)      AS id,
     BIN_TO_UUID(user_id) AS user_id,
     token_hash,
     expires_at
 FROM refresh_tokens
-WHERE id = UUID_TO_BIN(?)
+WHERE token_hash = ?
 LIMIT 1
 `
 
-type GetRefreshTokenRow struct {
+type GetRefreshTokenFromTokenHashRow struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	TokenHash string    `json:"token_hash"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-func (q *Queries) GetRefreshToken(ctx context.Context, uuidTOBIN string) (GetRefreshTokenRow, error) {
-	row := q.db.QueryRowContext(ctx, getRefreshToken, uuidTOBIN)
-	var i GetRefreshTokenRow
+func (q *Queries) GetRefreshTokenFromTokenHash(ctx context.Context, tokenHash string) (GetRefreshTokenFromTokenHashRow, error) {
+	row := q.db.QueryRowContext(ctx, getRefreshTokenFromTokenHash, tokenHash)
+	var i GetRefreshTokenFromTokenHashRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
